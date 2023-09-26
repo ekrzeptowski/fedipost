@@ -1,7 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
+import {userListenerMiddleware, userSlice} from "@/redux/features/user/userSlice";
 
 export const store = configureStore({
-    reducer: {},
+    reducer: {
+        user: userSlice.reducer,
+    },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(userListenerMiddleware.middleware),
     devTools: process.env.NODE_ENV !== "production",
 });
 

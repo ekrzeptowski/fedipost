@@ -30,6 +30,7 @@ export async function GET(req: Request) {
           clientId: appdata.clientId,
           clientSecret: appdata.clientSecret,
           sns,
+          server: serverUrl,
           url: appdata.url,
         });
       })

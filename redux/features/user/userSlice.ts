@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import {
   createAsyncThunk,
   createListenerMiddleware,
@@ -7,7 +7,6 @@ import {
 } from '@reduxjs/toolkit';
 import { RootState } from '@/redux/store';
 import generator from 'megalodon';
-import thunk from 'redux-thunk';
 import Account = Entity.Account;
 
 interface UserState {
@@ -41,7 +40,7 @@ const initialState: UserState =
 
 export const getUserSNS = createAsyncThunk(
   'user/getUserSNS',
-  async (url: string, thunkAPI) => {
+  async (url: string) => {
     return (await (await fetch('/api/detect?server=' + url)).json())
       .result as unknown as
       | 'pleroma'
@@ -54,7 +53,7 @@ export const getUserSNS = createAsyncThunk(
 
 export const getAuthUrl = createAsyncThunk(
   'user/getAuthUrl',
-  async (url: string, thunkAPI) => {
+  async (url: string) => {
     return await (await fetch('/api/auth-url?server=' + url)).json();
   }
 );
@@ -93,8 +92,8 @@ export const getUserData = createAsyncThunk(
       state.user.server,
       state.user.accessToken
     );
-    client.verifyAccountCredentials().then((res) => {
-      console.log(res);
+    return client.verifyAccountCredentials().then((res) => {
+      return res.data;
     });
   }
 );
@@ -102,7 +101,26 @@ export const getUserData = createAsyncThunk(
 export const userSlice = createSlice({
   name: 'user',
   initialState,
-  reducers: {},
+  reducers: {
+    logout: (state) => {
+      console.log('logout');
+      state.accessToken = undefined;
+      state.account = undefined;
+      state.clientId = undefined;
+      state.clientSecret = undefined;
+      state.isLoading = false;
+      state.server = undefined;
+      state.sns = null;
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('clientId');
+        localStorage.removeItem('clientSecret');
+        localStorage.removeItem('server');
+        localStorage.removeItem('sns');
+        window.location.href = '/';
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(getUserSNS.fulfilled, (state, action) => {
       state.sns = action.payload;
@@ -114,7 +132,7 @@ export const userSlice = createSlice({
       state.server = action.payload.server;
       !state.accessToken && (window.location.href = action.payload.url);
     });
-    builder.addCase(getAccessToken.pending, (state, action) => {
+    builder.addCase(getAccessToken.pending, (state) => {
       state.isLoading = true;
     });
     builder.addCase(getAccessToken.fulfilled, (state, action) => {
@@ -122,8 +140,11 @@ export const userSlice = createSlice({
       state.isLoading = false;
       window.location.href = '/app';
     });
-    builder.addCase(getAccessToken.rejected, (state, action) => {
+    builder.addCase(getAccessToken.rejected, (state) => {
       state.isLoading = false;
+    });
+    builder.addCase(getUserData.fulfilled, (state, action) => {
+      state.account = action.payload;
     });
   },
 });

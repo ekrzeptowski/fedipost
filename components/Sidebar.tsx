@@ -32,9 +32,9 @@ export function Sidebar({ links }: SidebarProps) {
             <AvatarImage src={account?.avatar} />
             <AvatarFallback>{account?.display_name}</AvatarFallback>
           </Avatar>
-          <span>{account?.display_name}</span>
+          <span>{account?.display_name || account?.username}</span>
         </p>
-        <a href='#' onClick={() => dispatch(logout(true))}>
+        <a href='#' onClick={() => dispatch(logout())}>
           Log out
         </a>
       </aside>

@@ -2,11 +2,32 @@ import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import generator from 'megalodon';
 import { RootState } from '@/redux/store';
 import ScheduledStatus = Entity.ScheduledStatus;
+import Account = Entity.Account;
 
 export const fediApi = createApi({
   reducerPath: 'fediApi',
   baseQuery: fakeBaseQuery(),
   endpoints: (builder) => ({
+    getUserData: builder.query<Account, void>({
+      queryFn: async (arg, { getState }) => {
+        const state = getState() as RootState;
+        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
+          throw new Error('User is not logged in');
+        }
+        const client = generator(
+          state.user.sns,
+          state.user.server,
+          state.user.accessToken
+        );
+
+        try {
+          const { data } = await client.verifyAccountCredentials();
+          return { data };
+        } catch (error) {
+          return { error };
+        }
+      },
+    }),
     getScheduledStatuses: builder.query<ScheduledStatus[], void>({
       queryFn: async (arg, { getState }) => {
         const state = getState() as RootState;
@@ -30,4 +51,4 @@ export const fediApi = createApi({
   }),
 });
 
-export const { useGetScheduledStatusesQuery } = fediApi;
+export const { useGetScheduledStatusesQuery, useGetUserDataQuery } = fediApi;

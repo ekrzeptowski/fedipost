@@ -7,7 +7,6 @@ import {
 } from '@reduxjs/toolkit';
 import { RootState } from '@/redux/store';
 import generator from 'megalodon';
-import Account = Entity.Account;
 
 interface UserState {
   isLoading: boolean;
@@ -16,7 +15,6 @@ interface UserState {
   sns?: 'pleroma' | 'misskey' | 'mastodon' | 'friendica' | null;
   clientId?: string;
   clientSecret?: string;
-  account?: Account;
 }
 
 const initialState: UserState =
@@ -80,24 +78,6 @@ export const getAccessToken = createAsyncThunk(
   }
 );
 
-export const getUserData = createAsyncThunk(
-  'user/getUserData',
-  async (_, { getState }) => {
-    const state = getState() as RootState;
-    if (!state.user.accessToken || !state.user.sns || !state.user.server) {
-      throw new Error('User is not logged in');
-    }
-    const client = generator(
-      state.user.sns,
-      state.user.server,
-      state.user.accessToken
-    );
-    return client.verifyAccountCredentials().then((res) => {
-      return res.data;
-    });
-  }
-);
-
 export const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -105,7 +85,6 @@ export const userSlice = createSlice({
     logout: (state) => {
       console.log('logout');
       state.accessToken = undefined;
-      state.account = undefined;
       state.clientId = undefined;
       state.clientSecret = undefined;
       state.isLoading = false;
@@ -142,9 +121,6 @@ export const userSlice = createSlice({
     });
     builder.addCase(getAccessToken.rejected, (state) => {
       state.isLoading = false;
-    });
-    builder.addCase(getUserData.fulfilled, (state, action) => {
-      state.account = action.payload;
     });
   },
 });

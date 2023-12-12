@@ -95,7 +95,7 @@ export const fediApi = createApi({
           return { error };
         }
       },
-      invalidatesTags: (result, error, arg) => [{ type: 'ScheduledStatus', id: result?.id || 'LIST' }]
+      invalidatesTags: [{ type: 'ScheduledStatus', id: 'LIST' }]
     }),
   }),
 });

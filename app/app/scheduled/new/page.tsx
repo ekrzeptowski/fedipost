@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { MediaUpload } from '@/components/MediaUpload';
 
 const postSchema = z.object({
   status: z.string(),
@@ -34,7 +35,12 @@ const postSchema = z.object({
     .object({
       in_reply_to_id: z.string().optional(),
       language: z.string().optional(),
-      media_ids: z.array(z.string()).optional(),
+      media_ids: z
+        .array(z.string())
+        .refine((value) => !value.includes('invalid'), {
+          message: 'Make sure that attachments are uploaded before submitting.',
+        })
+        .optional(),
       poll: z
         .object({
           options: z.array(z.string()),
@@ -182,6 +188,24 @@ export default function NewPostPage() {
 
           <FormField
             control={form.control}
+            name='options.media_ids'
+            render={({ field, fieldState: { error } }) => (
+              <FormItem>
+                <FormLabel>Media</FormLabel>
+                <FormControl>
+                  <MediaUpload
+                    media_ids={field.value}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormDescription>Upload media</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name='options.scheduled_at'
             render={({ field }) => (
               <FormItem>
@@ -203,6 +227,7 @@ export default function NewPostPage() {
                     }}
                     hideTimeZone
                     granularity={'minute'}
+                    aria-label='Scheduled at'
                   />
                 </FormControl>
                 <FormDescription>When should this be posted?</FormDescription>

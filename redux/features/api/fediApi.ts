@@ -4,6 +4,8 @@ import { RootState } from '@/redux/store';
 import ScheduledStatus = Entity.ScheduledStatus;
 import Status = Entity.Status;
 import Account = Entity.Account;
+import Attachment = Entity.Attachment;
+import AsyncAttachment = Entity.AsyncAttachment;
 
 type PostSchema = {
   status: string;
@@ -24,10 +26,21 @@ type PostSchema = {
     quote_id?: string;
   };
 };
+
+type UpdateMediaSchema = {
+  id: string;
+  options?: {
+    file?: any;
+    description?: string;
+    focus?: string;
+    is_sensitive?: boolean;
+  };
+};
+
 export const fediApi = createApi({
   reducerPath: 'fediApi',
   baseQuery: fakeBaseQuery(),
-  tagTypes: ['Account', 'ScheduledStatus'],
+  tagTypes: ['Account', 'ScheduledStatus', 'Attachment'],
   endpoints: (builder) => ({
     getUserData: builder.query<Account, void>({
       queryFn: async (arg, { getState }) => {
@@ -95,7 +108,62 @@ export const fediApi = createApi({
           return { error };
         }
       },
-      invalidatesTags: [{ type: 'ScheduledStatus', id: 'LIST' }]
+      invalidatesTags: [{ type: 'ScheduledStatus', id: 'LIST' }],
+    }),
+    uploadMedia: builder.mutation<AsyncAttachment, File>({
+      queryFn: async (file, { getState }) => {
+        const state = getState() as RootState;
+        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
+          throw new Error('User is not logged in');
+        }
+        const client = generator(
+          state.user.sns,
+          state.user.server,
+          state.user.accessToken
+        );
+
+        try {
+          const { data } = (await client.uploadMedia(file)) as unknown as {
+            data: AsyncAttachment;
+          };
+          return { data };
+        } catch (error) {
+          return { error };
+        }
+      },
+      invalidatesTags: (result, error) => {
+        if (error || !result) return [];
+        return [{ type: 'Attachment', id: result.id }];
+      },
+    }),
+    updateMedia: builder.mutation<Attachment, UpdateMediaSchema>({
+      queryFn: async ({ id, options }, { getState }) => {
+        const state = getState() as RootState;
+        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
+          throw new Error('User is not logged in');
+        }
+        const client = generator(
+          state.user.sns,
+          state.user.server,
+          state.user.accessToken
+        );
+
+        try {
+          const { data } = (await client.updateMedia(
+            id,
+            options
+          )) as unknown as {
+            data: Attachment;
+          };
+          return { data };
+        } catch (error) {
+          return { error };
+        }
+      },
+      invalidatesTags: (result, error) => {
+        if (error || !result) return [];
+        return [{ type: 'Attachment', id: result.id }];
+      },
     }),
   }),
 });
@@ -104,4 +172,6 @@ export const {
   useGetScheduledStatusesQuery,
   useGetUserDataQuery,
   useScheduleStatusMutation,
+  useUploadMediaMutation,
+  useUpdateMediaMutation,
 } = fediApi;

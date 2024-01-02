@@ -1,9 +1,9 @@
-"use client"
+'use client';
 
-import { useRef } from "react";
-import { useDateSegment } from "react-aria";
-import { DateFieldState, DateSegment as IDateSegment } from "react-stately";
-import { cn } from "@/lib/utils";
+import { useRef } from 'react';
+import { useDateSegment } from 'react-aria';
+import { DateFieldState, DateSegment as IDateSegment } from 'react-stately';
+import { cn } from '@/lib/utils';
 
 interface DateSegmentProps {
   segment: IDateSegment;
@@ -20,11 +20,12 @@ function DateSegment({ segment, state }: DateSegmentProps) {
   return (
     <div
       {...segmentProps}
+      suppressHydrationWarning
       ref={ref}
       className={cn(
-        "focus:rounded-[2px] focus:bg-accent focus:text-accent-foreground focus:outline-none",
-        segment.type !== "literal" ? "px-[1px]" : "",
-        segment.isPlaceholder ? "text-muted-foreground" : ""
+        'focus:rounded-[2px] focus:bg-accent focus:text-accent-foreground focus:outline-none',
+        segment.type !== 'literal' ? 'px-[1px]' : '',
+        segment.isPlaceholder ? 'text-muted-foreground' : ''
       )}
     >
       {segment.text}

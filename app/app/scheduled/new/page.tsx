@@ -82,7 +82,7 @@ export default function NewPostPage() {
     if (values?.options?.sensitive && !values.options.spoiler_text) {
       form.setError('options.spoiler_text', {
         type: 'manual',
-        message: 'Spoiler text is required when sensitive is true.',
+        message: 'Spoiler text is required when post is marked as sensitive.',
       });
       return;
     }
@@ -151,11 +151,16 @@ export default function NewPostPage() {
               name='options.spoiler_text'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Spoiler text</FormLabel>
+                  <FormLabel>Content warning text</FormLabel>
                   <FormControl>
-                    <Input placeholder='...' {...field} />
+                    <Input
+                      placeholder='Write post content warning'
+                      {...field}
+                    />
                   </FormControl>
-                  <FormDescription>Set post spoiler text</FormDescription>
+                  <FormDescription>
+                    Set post content warning text
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

@@ -129,13 +129,16 @@ export default function NewPostPage() {
             name='options.sensitive'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Sensitive</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
+                <div className='flex items-center space-x-2'>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel>Sensitive</FormLabel>
+                </div>
+
                 <FormDescription>Set post sensitivity</FormDescription>
                 <FormMessage />
               </FormItem>

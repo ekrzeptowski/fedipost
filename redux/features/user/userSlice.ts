@@ -73,7 +73,7 @@ export const getAccessToken = createAsyncThunk(
       state.user.clientId,
       state.user.clientSecret,
       code,
-      (process.env.WEBSITE_URL || 'http://localhost:3000') + '/auth/callback'
+      (window.location.origin || 'http://localhost:3000') + '/auth/callback'
     );
   }
 );

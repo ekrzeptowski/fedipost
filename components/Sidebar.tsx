@@ -19,15 +19,15 @@ export function Sidebar({ links }: SidebarProps) {
   });
   return (
     <>
-      <aside className='flex items-center space-x-2 p-2 max-lg:border-b lg:h-screen lg:flex-col lg:items-baseline lg:space-x-0 lg:space-y-2 lg:border-r'>
+      <aside className='flex items-center space-x-2 p-2 max-md:border-b md:h-screen md:flex-col md:items-baseline md:space-x-0 md:space-y-2 md:border-r'>
         <div>FediPost</div>
         <nav className='flex-1'>
-          <ul className='flex lg:flex-col'>
+          <ul className='flex md:flex-col'>
             {links?.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className='block px-4 py-2 hover:underline lg:px-0'
+                  className='block px-4 py-2 hover:underline md:px-0'
                 >
                   {link.name}
                 </Link>

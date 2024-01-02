@@ -106,14 +106,17 @@ export default function NewPostPage() {
 
   return (
     <div>
-      <h2>New post form</h2>
+      <h1 className='mb-4 text-2xl'>Schedule new post</h1>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className='flex max-w-md flex-1 flex-col space-y-2'
+        >
           <FormField
             control={form.control}
             name='status'
             render={({ field }) => (
-              <FormItem>
+              <FormItem className='w-full flex-1'>
                 <FormLabel>Status</FormLabel>
                 <FormControl>
                   <Textarea placeholder='Compose your status' {...field} />

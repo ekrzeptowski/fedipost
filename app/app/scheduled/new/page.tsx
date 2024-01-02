@@ -1,7 +1,7 @@
 'use client';
 
 import * as z from 'zod';
-import { FieldValues, useForm, UseFormReturn } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getLocalTimeZone, parseAbsolute } from '@internationalized/date';
 import { useRouter } from 'next/navigation';
@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MediaUpload } from '@/components/MediaUpload';
+import { Textarea } from '@/components/ui/textarea';
 
 const postSchema = z.object({
   status: z.string(),
@@ -101,7 +102,7 @@ export default function NewPostPage() {
 
   const router = useRouter();
 
-  const [schedule, result] = useScheduleStatusMutation();
+  const [schedule] = useScheduleStatusMutation();
 
   return (
     <div>
@@ -115,7 +116,7 @@ export default function NewPostPage() {
               <FormItem>
                 <FormLabel>Status</FormLabel>
                 <FormControl>
-                  <Input placeholder='shadcn' {...field} />
+                  <Textarea placeholder='Compose your status' {...field} />
                 </FormControl>
                 <FormDescription>This is your status.</FormDescription>
                 <FormMessage />
@@ -189,7 +190,7 @@ export default function NewPostPage() {
           <FormField
             control={form.control}
             name='options.media_ids'
-            render={({ field, fieldState: { error } }) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Media</FormLabel>
                 <FormControl>

@@ -1,40 +1,29 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import generator from 'megalodon';
+import generator, { MegalodonInterface } from 'megalodon';
 import { RootState } from '@/redux/store';
 import ScheduledStatus = Entity.ScheduledStatus;
 import Status = Entity.Status;
 import Account = Entity.Account;
 import Attachment = Entity.Attachment;
 import AsyncAttachment = Entity.AsyncAttachment;
+import {
+  PostSchema,
+  ScheduledStatusToPostSchema,
+  EditSchema,
+  UpdateMediaSchema,
+} from '@/app/app/scheduled/postSchema';
 
-type PostSchema = {
-  status: string;
-  options?: {
-    media_ids?: Array<string>;
-    poll?: {
-      options: Array<string>;
-      expires_in: number;
-      multiple?: boolean;
-      hide_totals?: boolean;
-    };
-    in_reply_to_id?: string;
-    sensitive?: boolean;
-    spoiler_text?: string;
-    visibility?: 'public' | 'unlisted' | 'private' | 'direct';
-    scheduled_at?: string;
-    language?: string;
-    quote_id?: string;
-  };
-};
+function arrIdentical(a1: any[], a2: any[]): boolean {
+  return (
+    a1.length === a2.length && a1.every((value, index) => value === a2[index])
+  );
+}
 
-type UpdateMediaSchema = {
-  id: string;
-  options?: {
-    file?: any;
-    description?: string;
-    focus?: string;
-    is_sensitive?: boolean;
-  };
+const getClient: (state: RootState) => MegalodonInterface = (state) => {
+  if (!state.user.accessToken || !state.user.sns || !state.user.server) {
+    throw new Error('User is not logged in');
+  }
+  return generator(state.user.sns, state.user.server, state.user.accessToken);
 };
 
 export const fediApi = createApi({
@@ -44,15 +33,7 @@ export const fediApi = createApi({
   endpoints: (builder) => ({
     getUserData: builder.query<Account, void>({
       queryFn: async (arg, { getState }) => {
-        const state = getState() as RootState;
-        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
-          throw new Error('User is not logged in');
-        }
-        const client = generator(
-          state.user.sns,
-          state.user.server,
-          state.user.accessToken
-        );
+        const client = getClient(getState() as RootState);
 
         try {
           const { data } = await client.verifyAccountCredentials();
@@ -71,15 +52,7 @@ export const fediApi = createApi({
         ];
       },
       queryFn: async (arg, { getState }) => {
-        const state = getState() as RootState;
-        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
-          throw new Error('User is not logged in');
-        }
-        const client = generator(
-          state.user.sns,
-          state.user.server,
-          state.user.accessToken
-        );
+        const client = getClient(getState() as RootState);
 
         try {
           const { data } = await client.getScheduledStatuses();
@@ -89,17 +62,70 @@ export const fediApi = createApi({
         }
       },
     }),
+    editScheduledStatus: builder.mutation<ScheduledStatus | Status, EditSchema>(
+      {
+        queryFn: async ({ id, post }, { getState }) => {
+          const client = getClient(getState() as RootState);
+
+          const oldPost = await client.getScheduledStatus(id);
+          // Compare oldPost.data all fields and post fields
+          const isChanged = (old: ScheduledStatus, edited: PostSchema) => {
+            const convertedOld = ScheduledStatusToPostSchema(old);
+            const oldOptions = convertedOld.options || {};
+            const editedOptions = edited.options || {};
+
+            return (
+              convertedOld.status !== edited.status ||
+              oldOptions.sensitive !== editedOptions.sensitive ||
+              oldOptions.spoiler_text !== editedOptions.spoiler_text ||
+              oldOptions.visibility !== editedOptions.visibility ||
+              !arrIdentical(
+                oldOptions.media_ids || [],
+                editedOptions.media_ids || []
+              )
+            );
+          };
+
+          console.log('oldPost', ScheduledStatusToPostSchema(oldPost.data));
+          console.log('post', post);
+
+          // Compare oldPost.data.scheduled_at and post.options.scheduled_at
+          const isDateChanged =
+            oldPost.data.scheduled_at !== post.options?.scheduled_at;
+          // If only date has been changed, use scheduleStatus
+          if (isDateChanged && !isChanged(oldPost.data, post)) {
+            try {
+              const { data } = await client.scheduleStatus(
+                id,
+                post.options?.scheduled_at
+              );
+              return { data };
+            } catch (error) {
+              return { error };
+            }
+          }
+
+          // If other fields have been changed, delete old post and create new post
+          try {
+            await client.cancelScheduledStatus(id);
+            const { data } = await client.postStatus(post.status, post.options);
+            return { data };
+          } catch (error) {
+            return { error };
+          }
+        },
+        invalidatesTags: (result, error) => {
+          if (error || !result) return [];
+          return [
+            { type: 'ScheduledStatus', id: 'LIST' },
+            { type: 'ScheduledStatus', id: result.id },
+          ];
+        },
+      }
+    ),
     scheduleStatus: builder.mutation<ScheduledStatus | Status, PostSchema>({
       queryFn: async (post, { getState }) => {
-        const state = getState() as RootState;
-        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
-          throw new Error('User is not logged in');
-        }
-        const client = generator(
-          state.user.sns,
-          state.user.server,
-          state.user.accessToken
-        );
+        const client = getClient(getState() as RootState);
 
         try {
           const { data } = await client.postStatus(post.status, post.options);
@@ -112,15 +138,7 @@ export const fediApi = createApi({
     }),
     uploadMedia: builder.mutation<AsyncAttachment, File>({
       queryFn: async (file, { getState }) => {
-        const state = getState() as RootState;
-        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
-          throw new Error('User is not logged in');
-        }
-        const client = generator(
-          state.user.sns,
-          state.user.server,
-          state.user.accessToken
-        );
+        const client = getClient(getState() as RootState);
 
         try {
           const { data } = (await client.uploadMedia(file)) as unknown as {
@@ -138,15 +156,7 @@ export const fediApi = createApi({
     }),
     updateMedia: builder.mutation<Attachment, UpdateMediaSchema>({
       queryFn: async ({ id, options }, { getState }) => {
-        const state = getState() as RootState;
-        if (!state.user.accessToken || !state.user.sns || !state.user.server) {
-          throw new Error('User is not logged in');
-        }
-        const client = generator(
-          state.user.sns,
-          state.user.server,
-          state.user.accessToken
-        );
+        const client = getClient(getState() as RootState);
 
         try {
           const { data } = (await client.updateMedia(
@@ -171,6 +181,7 @@ export const fediApi = createApi({
 export const {
   useGetScheduledStatusesQuery,
   useGetUserDataQuery,
+  useEditScheduledStatusMutation,
   useScheduleStatusMutation,
   useUploadMediaMutation,
   useUpdateMediaMutation,

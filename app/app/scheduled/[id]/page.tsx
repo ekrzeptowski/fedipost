@@ -5,7 +5,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getLocalTimeZone, parseAbsolute } from '@internationalized/date';
 import { useRouter } from 'next/navigation';
-import { useScheduleStatusMutation } from '@/redux/features/api/fediApi';
+import {
+  useEditScheduledStatusMutation,
+  useGetScheduledStatusesQuery,
+  useScheduleStatusMutation,
+} from '@/redux/features/api/fediApi';
 
 import {
   Form,
@@ -29,43 +33,14 @@ import {
 } from '@/components/ui/select';
 import { MediaUpload } from '@/components/MediaUpload';
 import { Textarea } from '@/components/ui/textarea';
+import { postSchema, ScheduledStatusToPostSchema } from '../postSchema';
+import { useEffect } from 'react';
 
-const postSchema = z.object({
-  status: z.string(),
-  options: z
-    .object({
-      in_reply_to_id: z.string().optional(),
-      language: z.string().optional(),
-      media_ids: z
-        .array(z.string())
-        .refine((value) => !value.includes('invalid'), {
-          message: 'Make sure that attachments are uploaded before submitting.',
-        })
-        .optional(),
-      poll: z
-        .object({
-          options: z.array(z.string()),
-          expires_in: z.number(),
-          multiple: z.boolean().optional(),
-          hide_totals: z.boolean().optional(),
-        })
-        .optional(),
-      sensitive: z.boolean().default(false).optional(),
-      spoiler_text: z.string().optional(),
-      visibility: z
-        .enum(['public', 'unlisted', 'private', 'direct'])
-        .optional(),
-      scheduled_at: z
-        .date()
-        .min(new Date(new Date().setMinutes(new Date().getMinutes() - 10)), {
-          message: 'Scheduled time must be at least 10 minutes in the future.',
-        })
-        .optional(),
-    })
-    .optional(),
-});
-
-export default function NewPostPage() {
+export default function PostSchedulePage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -76,6 +51,25 @@ export default function NewPostPage() {
       },
     },
   });
+  const foundStatus = useGetScheduledStatusesQuery().data?.find(
+    (status) => status.id === params.id
+  );
+
+  useEffect(() => {
+    const oldPost = foundStatus && ScheduledStatusToPostSchema(foundStatus);
+    oldPost &&
+      form.reset({
+        ...oldPost,
+        options: {
+          ...oldPost.options,
+          scheduled_at: oldPost?.options?.scheduled_at
+            ? new Date(oldPost?.options?.scheduled_at)
+            : undefined,
+        },
+      });
+  }, [params.id, foundStatus]);
+
+  const isEdit = params.id !== 'new';
 
   function onSubmit(values: z.infer<typeof postSchema>) {
     // make spoiler_text required if sensitive is true
@@ -95,7 +89,9 @@ export default function NewPostPage() {
         scheduled_at: values.options?.scheduled_at?.toISOString() || undefined,
       },
     };
-    schedule(valuesCopy);
+    isEdit
+      ? editScheduled({ id: params.id, post: valuesCopy })
+      : schedule(valuesCopy);
     // redirect to scheduled page
     router.push('/app/scheduled');
   }
@@ -103,10 +99,13 @@ export default function NewPostPage() {
   const router = useRouter();
 
   const [schedule] = useScheduleStatusMutation();
+  const [editScheduled] = useEditScheduledStatusMutation();
 
   return (
     <div>
-      <h1 className='mb-4 text-2xl'>Schedule new post</h1>
+      <h1 className='mb-4 text-2xl'>
+        {isEdit ? 'Edit scheduled post' : 'Schedule new post'}
+      </h1>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -177,10 +176,7 @@ export default function NewPostPage() {
               <FormItem>
                 <FormLabel>Visibility</FormLabel>
                 <FormControl>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger>
                       <SelectValue placeholder='Select post visibility' />
                     </SelectTrigger>
@@ -206,7 +202,9 @@ export default function NewPostPage() {
                 <FormLabel>Media</FormLabel>
                 <FormControl>
                   <MediaUpload
-                    media_ids={field.value}
+                    media_attachment={
+                      foundStatus?.media_attachments || undefined
+                    }
                     onChange={field.onChange}
                   />
                 </FormControl>

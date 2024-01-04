@@ -6,6 +6,7 @@ import { useAppDispatch } from '@/redux/hooks';
 import { userSlice } from '@/redux/features/user/userSlice';
 import Link from 'next/link';
 import { useGetUserDataQuery } from '@/redux/features/api/fediApi';
+import { Button } from '@/components/ui/button';
 
 type SidebarProps = {
   links?: { name: string; href: string }[];
@@ -19,18 +20,14 @@ export function Sidebar({ links }: SidebarProps) {
   });
   return (
     <>
-      <aside className='flex items-center space-x-2 p-2 max-md:border-b md:h-screen md:flex-col md:items-baseline md:space-x-0 md:space-y-2 md:border-r'>
-        <div>FediPost</div>
+      <aside className='sticky left-0 top-0 z-20 flex shrink-0 items-center space-x-2 bg-white p-2 max-md:border-b md:h-screen md:w-60 md:flex-col md:items-baseline md:space-x-0 md:space-y-2 md:border-r'>
         <nav className='flex-1'>
           <ul className='flex md:flex-col'>
             {links?.map((link) => (
               <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className='block px-4 py-2 hover:underline md:px-0'
-                >
-                  {link.name}
-                </Link>
+                <Button variant='link' asChild>
+                  <Link href={link.href}>{link.name}</Link>
+                </Button>
               </li>
             ))}
           </ul>
@@ -42,9 +39,10 @@ export function Sidebar({ links }: SidebarProps) {
           </Avatar>
           <span>{account?.display_name || account?.username}</span>
         </p>
-        <a href='#' onClick={() => dispatch(logout())}>
-          Log out
-        </a>
+        <Button variant='link' onClick={() => dispatch(logout())}>
+            Log out
+        </Button>
+
       </aside>
     </>
   );

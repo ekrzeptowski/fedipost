@@ -22,14 +22,17 @@ type Media = {
 };
 
 type MediaUploadProps = {
-  media_ids?: string[];
+  media_attachment?: Attachment[];
   onChange?: (media_ids: (string | undefined)[]) => void;
 };
 
-export const MediaUpload = ({ media_ids, onChange }: MediaUploadProps) => {
-  const [media, setMedia] = useState<Media[]>([]);
-
+export const MediaUpload = ({
+  media_attachment,
+  onChange,
+}: MediaUploadProps) => {
   const user = useSelector((state: RootState) => state.user);
+
+  const [media, setMedia] = useState<Media[]>([]);
 
   const [uploadMedia, uploadResult] = useUploadMediaMutation();
   const [updateMedia, updateResult] = useUpdateMediaMutation();
@@ -115,9 +118,20 @@ export const MediaUpload = ({ media_ids, onChange }: MediaUploadProps) => {
   }
 
   useEffect(() => {
+    if (media_attachment) {
+      setMedia(
+        media_attachment.map((m) => ({
+          fileName: m.id,
+          attachment: m,
+          state: 'uploaded',
+        }))
+      );
+    }
+  }, [media_attachment]);
+
+  useEffect(() => {
     onChange?.(
       media.map((m) => (m.state === 'uploaded' ? m.attachment?.id : 'invalid'))
-      // media.filter((m) => m.state === 'uploaded').map((m) => m.attachment?.id)
     );
   }, [media]);
 

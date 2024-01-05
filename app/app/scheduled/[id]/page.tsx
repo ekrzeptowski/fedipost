@@ -35,12 +35,23 @@ import { MediaUpload } from '@/components/MediaUpload';
 import { Textarea } from '@/components/ui/textarea';
 import { postSchema, ScheduledStatusToPostSchema } from '../postSchema';
 import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
 
 export default function PostSchedulePage({
   params,
 }: {
   params: { id: string };
 }) {
+  const router = useRouter();
+
+  const accessToken = useSelector((state: RootState) => state.user.accessToken);
+
+  if (typeof window !== 'undefined') {
+    if (!accessToken) {
+      router.replace('/auth');
+    }
+  }
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
     defaultValues: {
@@ -95,8 +106,6 @@ export default function PostSchedulePage({
     // redirect to scheduled page
     router.push('/app/scheduled');
   }
-
-  const router = useRouter();
 
   const [schedule] = useScheduleStatusMutation();
   const [editScheduled] = useEditScheduledStatusMutation();

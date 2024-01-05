@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus, Image, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
 
 function renderDate(date: string | number | Date) {
   const d = new Date(date);
@@ -11,6 +14,14 @@ function renderDate(date: string | number | Date) {
 }
 
 export default function ScheduledPage() {
+  const router = useRouter();
+  const accessToken = useSelector((state: RootState) => state.user.accessToken);
+
+  if (typeof window !== 'undefined') {
+    if (!accessToken) {
+      router.replace('/auth');
+    }
+  }
   const { data, error, isLoading } = useGetScheduledStatusesQuery();
   return isLoading ? (
     <h1>Loading...</h1>

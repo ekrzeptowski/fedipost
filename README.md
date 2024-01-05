@@ -1,5 +1,7 @@
 # Fedipost
 
+![App screenshot](app/screenshot.png)
+
 Fedipost is a fediverse post scheduler using builtin scheduling functionality.
 
 It allows you to schedule posts on Mastodon, Pleroma, and other fediverse platforms.

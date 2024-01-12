@@ -10,6 +10,8 @@ import generator from 'megalodon';
 
 interface UserState {
   isLoading: boolean;
+  isAuthLoading?: boolean;
+  authError?: string;
   accessToken?: string;
   server?: string;
   sns?: 'pleroma' | 'misskey' | 'mastodon' | 'friendica' | null;
@@ -21,6 +23,8 @@ const initialState: UserState =
   typeof window !== 'undefined'
     ? {
         isLoading: false,
+        isAuthLoading: false,
+        authError: undefined,
         accessToken: localStorage.getItem('accessToken') || undefined,
         server: localStorage.getItem('server') || undefined,
         sns: (localStorage.getItem('sns') as UserState['sns']) || null,
@@ -29,6 +33,8 @@ const initialState: UserState =
       }
     : {
         isLoading: false,
+        isAuthLoading: false,
+        authError: undefined,
         accessToken: undefined,
         server: undefined,
         sns: null,
@@ -52,7 +58,11 @@ export const getUserSNS = createAsyncThunk(
 export const getAuthUrl = createAsyncThunk(
   'user/getAuthUrl',
   async (url: string) => {
-    return await (await fetch('/api/auth-url?server=' + url)).json();
+    const response = await (await fetch('/api/auth-url?server=' + url)).json();
+    if (!response.success) {
+      throw new Error(response.error);
+    }
+    return response;
   }
 );
 
@@ -104,12 +114,21 @@ export const userSlice = createSlice({
     builder.addCase(getUserSNS.fulfilled, (state, action) => {
       state.sns = action.payload;
     });
+    builder.addCase(getAuthUrl.pending, (state) => {
+      state.isAuthLoading = true;
+      state.authError = undefined;
+    });
     builder.addCase(getAuthUrl.fulfilled, (state, action) => {
+      state.isAuthLoading = false;
       state.clientId = action.payload.clientId;
       state.clientSecret = action.payload.clientSecret;
       state.sns = action.payload.sns;
       state.server = action.payload.server;
       !state.accessToken && (window.location.href = action.payload.url);
+    });
+    builder.addCase(getAuthUrl.rejected, (state, action) => {
+      state.isAuthLoading = false;
+      state.authError = action.error.message;
     });
     builder.addCase(getAccessToken.pending, (state) => {
       state.isLoading = true;

@@ -39,12 +39,12 @@ export async function GET(req: Request) {
         return NextResponse.json({
           success: false,
           error: 'Server not found',
-        });
+        }, { status: 404 });
       });
   } catch (err) {
     return NextResponse.json({
       success: false,
       error: 'Invalid URL',
-    });
+    }, { status: 400 });
   }
 }

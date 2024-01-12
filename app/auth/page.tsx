@@ -13,8 +13,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {useAppDispatch} from "@/redux/hooks";
-import {getAuthUrl} from "@/redux/features/user/userSlice";
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { getAuthUrl } from '@/redux/features/user/userSlice';
+import { useEffect } from 'react';
 
 const authSchema = z.object({
   server: z.string().url(),
@@ -27,12 +28,23 @@ export default function Auth() {
       server: 'https://',
     },
   });
-    const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch();
+
+  const isAuthLoading = useAppSelector((state) => state.user.isAuthLoading);
+  const authError = useAppSelector((state) => state.user.authError);
 
   function onSubmit(data: z.infer<typeof authSchema>) {
     dispatch(getAuthUrl(data.server));
   }
 
+  useEffect(() => {
+    authError
+      ? form.setError('server', {
+          type: 'manual',
+          message: authError,
+        })
+      : form.clearErrors('server');
+  }, [authError]);
 
   return (
     <div>
@@ -53,7 +65,9 @@ export default function Auth() {
               </FormItem>
             )}
           />
-          <Button type='submit'>Submit</Button>
+          <Button type='submit' disabled={isAuthLoading}>
+            Submit
+          </Button>
         </form>
       </Form>
     </div>
